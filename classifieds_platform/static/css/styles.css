@@ -12,3 +12,9 @@
     max-width: 70%;
     display: inline-block;
 }
+.modal-body form p {
+    margin-bottom: 1rem;
+}
+.modal-body textarea {
+    resize: vertical;
+}

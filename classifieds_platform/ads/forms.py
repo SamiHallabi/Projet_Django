@@ -1,5 +1,6 @@
 from django import forms
-from .models import Ad, Category,Message
+from .models import Ad, Category,Message,Report
+
 
 class AdForm(forms.ModelForm):
     class Meta:
@@ -38,3 +39,13 @@ class SearchForm(forms.Form):
         label='Sort By',
         widget=forms.Select(attrs={'class': 'form-control'})
     )
+
+
+
+class ReportForm(forms.ModelForm):
+    class Meta:
+        model = Report
+        fields = ['reason']
+        widgets = {
+            'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Explain why you are reporting this ad'}),
+        }

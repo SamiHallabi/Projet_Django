@@ -1,0 +1,14 @@
+<form method="post" action="{% url 'report_ad' ad.id %}">
+    {% csrf_token %}
+    <div class="modal-header">
+        <h5 class="modal-title">Report Ad: {{ ad.title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        {{ form.as_p }}
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Submit Report</button>
+    </div>
+</form>

@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 from .models import Ad, Category, AdImage, Message,models,User,Profile
-from .forms import AdForm, MessageForm,SearchForm
+from .forms import AdForm, MessageForm,SearchForm,ReportForm
 from django.contrib.auth import logout
 
 def home(request):
@@ -161,3 +161,25 @@ def profile(request):
 def custom_logout(request):
     logout(request)
     return redirect('home')
+
+@login_required
+def report_ad(request, ad_id):
+    ad = get_object_or_404(Ad, id=ad_id)
+    
+    if ad.user == request.user:
+        messages.error(request, "You cannot report your own ad.")
+        return redirect('ad_detail', ad_id=ad.id)
+    
+    if request.method == 'POST':
+        form = ReportForm(request.POST)
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.ad = ad
+            report.user = request.user
+            report.save()
+            messages.success(request, "Your report has been submitted.")
+            return redirect('ad_detail', ad_id=ad.id)
+    else:
+        form = ReportForm()
+    
+    return render(request, 'report_ad.html', {'form': form, 'ad': ad})

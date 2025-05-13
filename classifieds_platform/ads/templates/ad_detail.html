@@ -1,23 +1,53 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
-    <h1>{{ ad.title }}</h1>
-    <p class="card-user"><strong>Posted by:</strong> {{ad.user}}</p>
-    <p><strong>Price:</strong> {{ ad.price }}€</p>
-    <p><strong>Location:</strong> {{ ad.location }}</p>
-    <p><strong>Category:</strong> {{ ad.category.name }}</p>
-    <p>{{ ad.description }}</p>
-    <h3>Images</h3>
+   <h1>{{ ad.title }}</h1>
     <div class="row">
-        {% for image in ad.adimage_set.all %}
-            <div class="col-md-4 mb-3">
-                <img src="{{ image.image.url }}" class="img-fluid" alt="Ad image">
+        <div class="col-md-6">
+            <div id="adImagesCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for image in ad.adimage_set.all %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ ad.title }}" style="height: 300px; object-fit: cover;">
+                        </div>
+                    {% empty %}
+                        <div class="carousel-item active">
+                            <img src="{% static 'images/placeholder.jpg' %}" class="d-block w-100" alt="No image" style="height: 300px; object-fit: cover;">
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#adImagesCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#adImagesCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
             </div>
-        {% empty %}
-            <p>No images available.</p>
-        {% endfor %}
+        </div>
+        <div class="col-md-6">
+            <p><strong>Price:</strong> {{ ad.price }}€</p>
+            <p><strong>Category:</strong> {{ ad.category.name }}</p>
+            <p><strong>Location:</strong> {{ ad.location }}</p>
+            <p><strong>Posted by:</strong> {{ ad.user.username }}</p>
+            <p><strong>Posted on:</strong> {{ ad.created_at|date:"M d, Y" }}</p>
+            <p><strong>Description:</strong> {{ ad.description }}</p>
+            {% if user.is_authenticated and user != ad.user %}
+                <a href="{% url 'conversation' user_id=ad.user.id ad_id=ad.id %}" class="btn btn-primary">Contact Seller</a>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reportModal">
+                    Report Ad
+                </button>
+            {% endif %}
+        </div>
     </div>
-    {% if user.is_authenticated and user != ad.user %}
-        <a href="{% url 'conversation' ad.user.id ad.id %}" class="btn btn-primary">Message Seller</a>
-    {% endif %}
+
+    <!-- Report Modal -->
+    <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                {% include 'report_ad.html' %}
+            </div>
+        </div>
+    </div>
 {% endblock %}
