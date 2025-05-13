@@ -1,29 +1,48 @@
 {% extends 'base.html' %}
 {% block content %}
-    <h2>Inbox</h2>
-    <div class="card">
-        <div class="card-body">
-            {% if conversations %}
-                <ul class="list-group">
+  <h1>Inbox</h1>
+    {% if conversations %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Ad</th>
+                        <th>Last Message</th>
+                        <th>Date</th>
+                        <th>Unread</th>
+                    </tr>
+                </thead>
+                <tbody>
                     {% for conv in conversations %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <a href="{% if conv.ad %}{% url 'conversation' conv.user.id conv.ad.id %}{% else %}{% url 'conversation' conv.user.id %}{% endif %}">
-                                    <strong>{{ conv.user.username }}</strong> 
-                                    {% if conv.ad %}re: {{ conv.ad.title }}{% endif %}
-                                    <p class="mb-0">{{ conv.last_message.content|truncatewords:10 }}</p>
-                                    <small class="text-muted">{{ conv.last_message.created_at|date:"M d, Y H:i" }}</small>
+                        <tr class="{% if conv.unread_count > 0 %}table-primary{% endif %}">
+                            <td>
+                                <a href="{% url 'conversation' user_id=conv.user.id %}">
+                                    {{ conv.user.username }}
                                 </a>
-                            </div>
-                            {% if conv.unread_count > 0 %}
-                                <span class="badge bg-primary rounded-pill">{{ conv.unread_count }}</span>
-                            {% endif %}
-                        </li>
+                            </td>
+                            <td>
+                                {% if conv.ad %}
+                                    <a href="{% url 'ad_detail' conv.ad.id %}">{{ conv.ad.title|truncatechars:30 }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ conv.last_message.content|truncatewords:10 }}</td>
+                            <td>{{ conv.last_message.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if conv.unread_count > 0 %}
+                                    <span class="badge bg-primary">{{ conv.unread_count }}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
                     {% endfor %}
-                </ul>
-            {% else %}
-                <p>No conversations yet.</p>
-            {% endif %}
+                </tbody>
+            </table>
         </div>
-    </div>
+    {% else %}
+        <p class="text-muted">No conversations yet.</p>
+    {% endif %}
 {% endblock %}
