@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <h1>{{ ad.title }}</h1>
+    <p class="card-user"><strong>Posted by:</strong> {{ad.user}}</p>
+    <p><strong>Price:</strong> {{ ad.price }}€</p>
+    <p><strong>Location:</strong> {{ ad.location }}</p>
+    <p><strong>Category:</strong> {{ ad.category.name }}</p>
+    <p>{{ ad.description }}</p>
+    <h3>Images</h3>
+    <div class="row">
+        {% for image in ad.adimage_set.all %}
+            <div class="col-md-4 mb-3">
+                <img src="{{ image.image.url }}" class="img-fluid" alt="Ad image">
+            </div>
+        {% empty %}
+            <p>No images available.</p>
+        {% endfor %}
+    </div>
+    {% if user.is_authenticated and user != ad.user %}
+        <a href="{% url 'conversation' ad.user.id ad.id %}" class="btn btn-primary">Message Seller</a>
+    {% endif %}
+{% endblock %}

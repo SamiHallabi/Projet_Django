@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+   <h1>Latest Ads</h1>
+    <form method="get" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                {{ form.query.label_tag }}
+                {{ form.query }}
+            </div>
+            <div class="col-md-3">
+                {{ form.category.label_tag }}
+                {{ form.category }}
+            </div>
+            <div class="col-md-2">
+                {{ form.min_price.label_tag }}
+                {{ form.min_price }}
+            </div>
+            <div class="col-md-2">
+                {{ form.max_price.label_tag }}
+                {{ form.max_price }}
+            </div>
+            <div class="col-md-2">
+                {{ form.location.label_tag }}
+                {{ form.location }}
+            </div>
+            <div class="col-md-2">
+                {{ form.sort_by.label_tag }}
+                {{ form.sort_by }}
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+        </div>
+    </form>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    <div class="row">
+        {% for ad in ads %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    {% with first_image=ad.adimage_set.first %}
+                        {% if first_image %}
+                            <img src="{{ first_image.image.url }}" class="card-img-top" alt="{{ ad.title }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <img src="{% static 'images/placeholder.jpg' %}" class="card-img-top" alt="No image" style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                    {% endwith %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ ad.title }}</h5>
+                        <p class="card-user"><strong>Posted by:</strong> {{ad.user}}</p>
+                        <p class="card-text">{{ ad.description|truncatewords:20 }}</p>
+                        <p class="card-text"><strong>Price:</strong> {{ ad.price }}MAD</p>
+                        <a href="{% url 'ad_detail' ad.id %}" class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p>No ads found.</p>
+        {% endfor %}
+    </div>
+{% endblock %}
