@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <h1>Manage Reports</h1>
+    {% if reports %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Ad</th>
+                        <th>User</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'ad_detail' report.ad.id %}">{{ report.ad.title|truncatechars:30 }}</a>
+                            </td>
+                            <td>{{ report.user.username }}</td>
+                            <td>{{ report.reason|truncatewords:10 }}</td>
+                            <td>{{ report.status|title }}</td>
+                            <td>{{ report.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if report.status == 'pending' %}
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="report_id" value="{{ report.id }}">
+                                        <input type="hidden" name="action" value="resolve">
+                                        <button type="submit" class="btn btn-success btn-sm">Resolve</button>
+                                    </form>
+                                {% endif %}
+                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ report.id }}">
+                                    Delete
+                                </button>
+                                <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteModal{{ report.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ report.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="deleteModalLabel{{ report.id }}">Confirm Delete</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Are you sure you want to delete the report on "{{ report.ad.title }}"?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="post" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="report_id" value="{{ report.id }}">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted">No reports to display.</p>
+    {% endif %}
+{% endblock %}

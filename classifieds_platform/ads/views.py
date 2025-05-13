@@ -4,9 +4,10 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from .models import Ad, Category, AdImage, Message,models,User,Profile
+from .models import Ad, Category, AdImage, Message,models,User,Profile,Report
 from .forms import AdForm, MessageForm,SearchForm,ReportForm
 from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 def home(request):
     form = SearchForm(request.GET or None)
@@ -183,3 +184,28 @@ def report_ad(request, ad_id):
         form = ReportForm()
     
     return render(request, 'report_ad.html', {'form': form, 'ad': ad})
+
+def is_staff(user):
+    return user.is_staff or user.is_superuser
+
+@user_passes_test(is_staff)
+def report_management(request):
+    reports = Report.objects.select_related('ad', 'user').order_by('-created_at')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        report_id = request.POST.get('report_id')
+        report = get_object_or_404(Report, id=report_id)
+        
+        if action == 'resolve':
+            report.status = 'resolved'
+            report.save()
+            messages.success(request, f"Report on '{report.ad.title}' marked as resolved.")
+        elif action == 'delete':
+            report_title = report.ad.title
+            report.delete()
+            messages.success(request, f"Report on '{report_title}' deleted.")
+        
+        return redirect('report_management')
+    
+    return render(request, 'report_management.html', {'reports': reports})

@@ -14,4 +14,5 @@ urlpatterns = [
     path('conversation/<int:user_id>/', views.conversation, name='conversation'),
     path('profile/', views.profile, name='profile'),
     path('ad/<int:ad_id>/report/', views.report_ad, name='report_ad'),
+    path('admin/reports/', views.report_management, name='report_management'),
 ]
