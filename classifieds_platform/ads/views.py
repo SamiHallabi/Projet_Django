@@ -73,58 +73,44 @@ def ad_detail(request, ad_id):
 
 @login_required
 def inbox(request):
-    # Get all conversations (distinct sender/recipient pairs for the current user)
-    received = Message.objects.filter(recipient=request.user).values('sender', 'ad').distinct()
-    sent = Message.objects.filter(sender=request.user).values('recipient', 'ad').distinct()
+    # Get all messages involving the user
+    messages_qs = Message.objects.filter(
+        Q(sender=request.user) | Q(recipient=request.user)
+    ).select_related('sender', 'recipient', 'ad').order_by('-created_at')
     
+    # Group conversations by the other user
     conversations = []
-    seen = set()
+    seen_users = set()
     
-    for msg in received:
-        key = (msg['sender'], msg['ad'])
-        if key not in seen:
-            sender = User.objects.get(id=msg['sender'])
-            ad = Ad.objects.get(id=msg['ad']) if msg['ad'] else None
+    for msg in messages_qs:
+        other_user = msg.sender if msg.sender != request.user else msg.recipient
+        if other_user.id not in seen_users:
             last_message = Message.objects.filter(
-                sender__id=msg['sender'],
-                recipient=request.user,
-                ad=ad
+                Q(sender=request.user, recipient=other_user) |
+                Q(sender=other_user, recipient=request.user)
             ).order_by('-created_at').first()
+            
             unread_count = Message.objects.filter(
-                sender__id=msg['sender'],
+                sender=other_user,
                 recipient=request.user,
-                ad=ad,
                 is_read=False
             ).count()
+            
+            # Get the ad for the last message, if any
+            ad = last_message.ad if last_message.ad else None
+            
             conversations.append({
-                'user': sender,
+                'user': other_user,
                 'ad': ad,
                 'last_message': last_message,
                 'unread_count': unread_count
             })
-            seen.add(key)
+            seen_users.add(other_user.id)
     
-    for msg in sent:
-        key = (msg['recipient'], msg['ad'])
-        if key not in seen:
-            recipient = User.objects.get(id=msg['recipient'])
-            ad = Ad.objects.get(id=msg['ad']) if msg['ad'] else None
-            last_message = Message.objects.filter(
-                sender=request.user,
-                recipient__id=msg['recipient'],
-                ad=ad
-            ).order_by('-created_at').first()
-            conversations.append({
-                'user': recipient,
-                'ad': ad,
-                'last_message': last_message,
-                'unread_count': 0
-            })
-            seen.add(key)
+    # Sort by last message timestamp
+    conversations.sort(key=lambda x: x['last_message'].created_at, reverse=True)
     
-    conversations.sort(key=lambda x: x['last_message'].created_at if x['last_message'] else 0, reverse=True)
     return render(request, 'inbox.html', {'conversations': conversations})
-
 @login_required
 def conversation(request, user_id, ad_id=None):
     other_user = get_object_or_404(User, id=user_id)
@@ -134,16 +120,14 @@ def conversation(request, user_id, ad_id=None):
     Message.objects.filter(
         sender=other_user,
         recipient=request.user,
-        ad=ad,
         is_read=False
     ).update(is_read=True)
     
-    # Get message thread (renamed from 'messages' to 'message_list')
+    # Fetch messages between users
     message_list = Message.objects.filter(
         Q(sender=request.user, recipient=other_user) |
-        Q(sender=other_user, recipient=request.user),
-        ad=ad
-    ).order_by('created_at')
+        Q(sender=other_user, recipient=request.user)
+    ).select_related('sender', 'recipient', 'ad').order_by('created_at')
     
     if request.method == 'POST':
         form = MessageForm(request.POST)
@@ -153,13 +137,13 @@ def conversation(request, user_id, ad_id=None):
             message.recipient = other_user
             message.ad = ad
             message.save()
-            messages.success(request, 'Message sent!')  # Use django.contrib.messages
-            return redirect('conversation', user_id=user_id, ad_id=ad_id)
+            messages.success(request, 'Message sent!')
+            return redirect('conversation', user_id=user_id)
     else:
         form = MessageForm()
     
     return render(request, 'conversation.html', {
-        'messages': message_list,  # Update template variable
+        'messages': message_list,
         'form': form,
         'other_user': other_user,
         'ad': ad

@@ -1,7 +1,14 @@
-body {
+/* static/css/styles.css */
+.table th, .table td {
+    vertical-align: middle;
+}
+.table-hover tbody tr:hover {
     background-color: #f8f9fa;
 }
-.card-img-top {
-    height: 200px;
-    object-fit: cover;
+.card-text, .badge {
+    margin-bottom: 0.5rem;
+}
+.conversation-message {
+    max-width: 70%;
+    display: inline-block;
 }

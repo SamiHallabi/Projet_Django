@@ -1,26 +1,28 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
-    <h2>Conversation with {{ other_user.username }} {% if ad %}re: {{ ad.title }}{% endif %}</h2>
-    <div class="card">
-        <div class="card-body" id="message-container">
-            {% for message in message_list %}  <!-- Changed from 'messages' to 'message_list' -->
-                <div class="message {% if message.sender == user %}sent{% else %}received{% endif %}">
-                    <p><strong>{{ message.sender.username }}</strong> <small>{{ message.created_at|date:"M d, Y H:i" }}</small></p>
-                    <p>{{ message.content }}</p>
+   <h1>Conversation with {{ other_user.username }}</h1>
+    {% if ad %}
+        <p><strong>Regarding:</strong> <a href="{% url 'ad_detail' ad.id %}">{{ ad.title }}</a></p>
+    {% endif %}
+    <div class="card mb-4">
+        <div class="card-body">
+            {% for message in messages %}
+                <div class="mb-3 {% if message.sender == request.user %}text-end{% else %}text-start{% endif %}">
+                    <p class="mb-1"><strong>{{ message.sender.username }}</strong> <small>{{ message.created_at|date:"M d, Y H:i" }}</small></p>
+                    <p class="border p-2 rounded {% if message.sender == request.user %}bg-light{% else %}bg-secondary text-white{% endif %}">
+                        {{ message.content }}
+                    </p>
+                    {% if message.ad and message.ad != ad %}
+                        <p><small>Re: <a href="{% url 'ad_detail' message.ad.id %}">{{ message.ad.title }}</a></small></p>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
     </div>
-    <form method="post" class="mt-3">
+    <form method="post" class="mb-4">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="btn btn-primary">Send</button>
     </form>
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-success">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-    <script src="{% static 'js/inbox.js' %}"></script>
 {% endblock %}
