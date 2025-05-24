@@ -7,8 +7,8 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Ad</th>
-                        <th>User</th>
+                        <th>Ad Title</th>
+                        <th>Reported By</th>
                         <th>Reason</th>
                         <th>Status</th>
                         <th>Created</th>
@@ -22,11 +22,11 @@
                                 <a href="{% url 'ad_detail' report.ad.id %}">{{ report.ad.title|truncatechars:30 }}</a>
                             </td>
                             <td>{{ report.user.username }}</td>
-                            <td>{{ report.reason|truncatewords:10 }}</td>
+                            <td>{{ report.reason|truncatechars:50 }}</td>
                             <td>{{ report.status|title }}</td>
                             <td>{{ report.created_at|date:"M d, Y H:i" }}</td>
                             <td>
-                                {% if report.status == 'pending' %}
+                                {% if report.status != 'resolved' %}
                                     <form method="post" style="display:inline;">
                                         {% csrf_token %}
                                         <input type="hidden" name="report_id" value="{{ report.id }}">
@@ -35,7 +35,7 @@
                                     </form>
                                 {% endif %}
                                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ report.id }}">
-                                    Delete
+                                    Delete Ad
                                 </button>
                                 <!-- Delete Confirmation Modal -->
                                 <div class="modal fade" id="deleteModal{{ report.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ report.id }}" aria-hidden="true">
@@ -46,14 +46,14 @@
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body">
-                                                Are you sure you want to delete the report on "{{ report.ad.title }}"?
+                                                Are you sure you want to delete the ad "{{ report.ad.title }}"? This will also resolve the associated report.
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                                                 <form method="post" style="display:inline;">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="report_id" value="{{ report.id }}">
-                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="action" value="delete_ad">
                                                     <button type="submit" class="btn btn-danger">Delete</button>
                                                 </form>
                                             </div>

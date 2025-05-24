@@ -201,11 +201,13 @@ def report_management(request):
             report.status = 'resolved'
             report.save()
             messages.success(request, f"Report on '{report.ad.title}' marked as resolved.")
-        elif action == 'delete':
-            report_title = report.ad.title
-            report.delete()
-            messages.success(request, f"Report on '{report_title}' deleted.")
+        elif action == 'delete_ad':
+            ad = report.ad
+            ad_title = ad.title
+            ad.delete()  # Cascades to related Report, AdImage, Message
+            messages.success(request, f"Ad '{ad_title}' deleted and associated report resolved.")
         
         return redirect('report_management')
     
     return render(request, 'report_management.html', {'reports': reports})
+
