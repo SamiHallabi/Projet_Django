@@ -62,3 +62,21 @@ class Report(models.Model):
 
     def __str__(self):
         return f"Report on {self.ad} by {self.user}"
+    
+from django.db import models
+from django.contrib.auth.models import User
+from .models import Ad
+
+class Question(models.Model):
+    ad = models.ForeignKey(Ad, on_delete=models.CASCADE, related_name='questions')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='questions')
+    text = models.TextField()  # Question ou réponse
+    is_answer = models.BooleanField(default=False)  # True pour réponse, False pour question
+    created_at = models.DateTimeField(auto_now_add=True)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')  # Pour lier réponse à question
+
+    def __str__(self):
+        return f"{'Answer' if self.is_answer else 'Question'} by {self.user.username} on {self.ad.title}"
+
+    class Meta:
+        ordering = ['created_at']

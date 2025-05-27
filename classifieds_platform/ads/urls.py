@@ -15,7 +15,6 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('ad/<int:ad_id>/report/', views.report_ad, name='report_ad'),
     path('report_management/', views.report_management, name='report_management'),
-    
-   
-   
-]
+    path('ad/<int:ad_id>/edit/', views.ad_edit, name='ad_edit'),
+    path('ad/<int:ad_id>/delete/', views.ad_delete, name='ad_delete')
+    ]

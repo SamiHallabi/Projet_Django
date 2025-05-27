@@ -6,3 +6,4 @@ class AdsConfig(AppConfig):
 
     def ready(self):
         import ads.signals
+

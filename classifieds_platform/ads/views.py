@@ -4,8 +4,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from .models import Ad, Category, AdImage, Message,models,User,Profile,Report
-from .forms import AdForm, MessageForm,SearchForm,ReportForm
+from .models import Ad, Category, AdImage, Message,models,User,Profile,Report,Question
+from .forms import AdForm, MessageForm,SearchForm,ReportForm, ProfileForm, QuestionForm
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 
@@ -70,7 +70,51 @@ def ad_create(request):
 
 def ad_detail(request, ad_id):
     ad = get_object_or_404(Ad, id=ad_id)
-    return render(request, 'ad_detail.html', {'ad': ad})
+    
+    # Récupérer les questions (parent=None) et leurs réponses
+    questions = ad.questions.filter(parent__isnull=True).prefetch_related('replies')
+    
+    question_form = None
+    answer_form = None
+    
+    if request.user.is_authenticated:
+        # Formulaire pour poser une question
+        if request.method == 'POST' and 'submit_question' in request.POST:
+            question_form = QuestionForm(request.POST)
+            if question_form.is_valid():
+                question = question_form.save(commit=False)
+                question.ad = ad
+                question.user = request.user
+                question.is_answer = False
+                question.save()
+                messages.success(request, "Votre question a été publiée.")
+                return redirect('ad_detail', ad_id=ad_id)
+        else:
+            question_form = QuestionForm()
+        
+        # Formulaire pour répondre (si propriétaire ou admin)
+        if request.user == ad.user or request.user.is_staff:
+            if request.method == 'POST' and 'submit_answer' in request.POST:
+                answer_form = QuestionForm(request.POST)
+                parent_id = request.POST.get('parent_id')
+                if answer_form.is_valid() and parent_id:
+                    answer = answer_form.save(commit=False)
+                    answer.ad = ad
+                    answer.user = request.user
+                    answer.is_answer = True
+                    answer.parent = get_object_or_404(Question, id=parent_id, ad=ad)
+                    answer.save()
+                    messages.success(request, "Votre réponse a été publiée.")
+                    return redirect('ad_detail', ad_id=ad_id)
+            else:
+                answer_form = QuestionForm()
+    
+    return render(request, 'ad_detail.html', {
+        'ad': ad,
+        'questions': questions,
+        'question_form': question_form,
+        'answer_form': answer_form,
+    })
 
 @login_required
 def inbox(request):
@@ -156,12 +200,19 @@ def profile(request):
         profile = request.user.profile
     except Profile.DoesNotExist:
         profile = Profile.objects.create(user=request.user)
+    
     ads = Ad.objects.filter(user=request.user).select_related('category').prefetch_related('adimage_set')
-    return render(request, 'profile.html', {'user': request.user, 'profile': profile, 'ads': ads})
-
-def custom_logout(request):
-    logout(request)
-    return redirect('home')
+    
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your profile has been updated.")
+            return redirect('profile')
+    else:
+        form = ProfileForm(instance=profile)
+    
+    return render(request, 'profile.html', {'user': request.user, 'profile': profile, 'ads': ads, 'form': form})
 
 @login_required
 def report_ad(request, ad_id):
@@ -210,4 +261,40 @@ def report_management(request):
         return redirect('report_management')
     
     return render(request, 'report_management.html', {'reports': reports})
+
+@login_required
+def ad_edit(request, ad_id):
+    ad = get_object_or_404(Ad, id=ad_id)
+    if ad.user != request.user:
+        messages.error(request, "Vous n'êtes pas autorisé à modifier cette annonce.")
+        return redirect('profile')
+    
+    if request.method == 'POST':
+        form = AdForm(request.POST, request.FILES, instance=ad)
+        if form.is_valid():
+            ad = form.save(commit=False)
+            ad.status = 'pending'  # Nouvelle modération
+            ad.save()
+            form.save_m2m()  # Sauvegarde des relations (par exemple, images)
+            messages.success(request, f"L'annonce '{ad.title}' a été modifiée et est en attente de modération.")
+            return redirect('profile')
+    else:
+        form = AdForm(instance=ad)
+    
+    return render(request, 'ad_edit.html', {'form': form, 'ad': ad})
+
+@login_required
+def ad_delete(request, ad_id):
+    ad = get_object_or_404(Ad, id=ad_id)
+    if ad.user != request.user:
+        messages.error(request, "Vous n'êtes pas autorisé à supprimer cette annonce.")
+        return redirect('profile')
+    
+    if request.method == 'POST':
+        ad_title = ad.title
+        ad.delete()  # Cascade vers AdImage, Report, Message
+        messages.success(request, f"L'annonce '{ad_title}' a été supprimée.")
+        return redirect('profile')
+    
+    return redirect('profile')  # GET redirige vers profile
 
